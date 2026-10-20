@@ -1,0 +1,76 @@
+{
+    "name": "hampel/maxmind-api",
+    "description": "A PHP client for MaxMind - GeoIP2 web services, GeoIP and GeoLite database files read into the same models, and database downloads - over any PSR-18 HTTP client",
+    "authors": [
+        {
+            "name": "Simon Hampel",
+            "email": "simon@hampelgroup.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/hampel/maxmind-api/issues",
+        "source": "https://github.com/hampel/maxmind-api"
+    },
+    "keywords": [
+        "maxmind",
+        "geoip",
+        "geoip2",
+        "geolite2",
+        "geolocation",
+        "mmdb",
+        "api",
+        "psr-18"
+    ],
+    "homepage": "https://github.com/hampel/maxmind-api",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.3",
+        "ext-filter": "*",
+        "ext-json": "*",
+        "ext-zlib": "*",
+        "maxmind-db/reader": "^1.14",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.1|^2.0",
+        "psr/log": "^1.1|^2.0|^3.0"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^7.8|^8.0",
+        "hampel/rig": "^1.1",
+        "laravel/pint": "^1.30",
+        "phpstan/phpstan": "^2.1.22",
+        "phpunit/phpunit": "^12.0"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "A PSR-18 client to send requests with; any implementation will do",
+        "guzzlehttp/psr7": "PSR-17 factories, found automatically when none are passed to Client - as are nyholm/psr7 and laminas/laminas-diactoros",
+        "ext-bcmath": "Lets maxmind-db/reader decode the 128-bit integers some databases hold; ext-gmp does too",
+        "ext-maxminddb": "maxmind-db/reader's C extension, used automatically when loaded - several times faster per lookup than the pure PHP decoder"
+    },
+    "autoload": {
+        "psr-4": {
+            "Hampel\\MaxMind\\Api\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Hampel\\MaxMind\\Api\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {}
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "format": "pint",
+        "lint": "pint --test",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ]
+    }
+}
