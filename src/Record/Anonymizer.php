@@ -17,7 +17,12 @@ use Hampel\MaxMind\Api\Support\Cast;
  *   key `anonymizer_confidence` where Insights says `confidence`, which fromDatabase() absorbs;
  * - and the Residential Proxy database, which fills only `residential`.
  *
- * FLAGS ARE FALSE WHEN ABSENT, because MaxMind sends each one only when it is true.
+ * NULL IS "NOT KNOWN", FALSE IS "CHECKED, NO". MaxMind sends each flag only when it is true, so
+ * from a source that covers a flag - Insights, Anonymous IP, Anonymous Plus - an absent flag is
+ * false. The Residential Proxy database covers none of them, so from it every flag is null; and
+ * only Insights and Residential Proxy carry the residential feed, so from the other two
+ * `residential` is null rather than an empty record. A rule should treat null as "this source
+ * cannot say", which is not the same as "clean".
  *
  * `confidence` IS ANY INTEGER FROM 1 TO 99, not an enumeration. MaxMind documents 30 and 99, and
  * a release note of 2026-06-24 says some networks now answer 50; a rule should compare with a
@@ -34,22 +39,23 @@ final class Anonymizer extends Record
      */
     public function __construct(
         public readonly ?int $confidence = null,
-        public readonly bool $isAnonymous = false,
-        public readonly bool $isAnonymousVpn = false,
-        public readonly bool $isHostingProvider = false,
-        public readonly bool $isPublicProxy = false,
-        public readonly bool $isResidentialProxy = false,
-        public readonly bool $isTorExitNode = false,
+        public readonly ?bool $isAnonymous = null,
+        public readonly ?bool $isAnonymousVpn = null,
+        public readonly ?bool $isHostingProvider = null,
+        public readonly ?bool $isPublicProxy = null,
+        public readonly ?bool $isResidentialProxy = null,
+        public readonly ?bool $isTorExitNode = null,
         public readonly ?\DateTimeImmutable $networkLastSeen = null,
         public readonly ?string $providerName = null,
-        public readonly ResidentialAnonymizer $residential = new ResidentialAnonymizer(),
+        public readonly ?ResidentialAnonymizer $residential = null,
         array $raw = [],
     ) {
         parent::__construct($raw);
     }
 
     /**
-     * The Insights `anonymizer` section.
+     * The Insights `anonymizer` section - or its absence, which from Insights is an answer: every
+     * flag false and nothing seen by the residential feed.
      *
      * @param  array<string, mixed>  $row
      */
@@ -60,18 +66,19 @@ final class Anonymizer extends Record
 
     /**
      * A record from the Anonymous IP or Anonymous Plus database, whose confidence key is
-     * `anonymizer_confidence`.
+     * `anonymizer_confidence`. Neither carries the residential feed, so `residential` is null.
      *
      * @param  array<string, mixed>  $row
      */
     public static function fromDatabase(array $row): self
     {
-        return self::read($row, 'anonymizer_confidence', new ResidentialAnonymizer());
+        return self::read($row, 'anonymizer_confidence', null);
     }
 
     /**
      * A record from the Residential Proxy database, which describes only the residential feed -
-     * provider, confidence and last-seen date - and so fills only `residential`.
+     * provider, confidence and last-seen date - and so fills only `residential`. Every flag is
+     * null: this database cannot say whether an address is a VPN or a Tor exit.
      *
      * @param  array<string, mixed>  $row
      */
@@ -81,28 +88,50 @@ final class Anonymizer extends Record
     }
 
     /**
-     * Whether any anonymity flag is set, or the residential feed has seen the address.
+     * Whether any anonymity flag is true, or the residential feed has seen the address.
+     *
+     * False does not mean clean when the source could not answer every flag - check
+     * isComplete() for that.
      */
     public function isFlagged(): bool
     {
-        return $this->isAnonymous
-            || $this->isAnonymousVpn
-            || $this->isHostingProvider
-            || $this->isPublicProxy
-            || $this->isResidentialProxy
-            || $this->isTorExitNode
+        return $this->isAnonymous === true
+            || $this->isAnonymousVpn === true
+            || $this->isHostingProvider === true
+            || $this->isPublicProxy === true
+            || $this->isResidentialProxy === true
+            || $this->isTorExitNode === true
             || $this->hasResidential();
     }
 
+    /**
+     * Whether the residential feed has seen the address. False both when it has not and when this
+     * source does not carry the feed; `residential === null` is the second.
+     */
     public function hasResidential(): bool
     {
-        return !$this->residential->isEmpty();
+        return $this->residential !== null && !$this->residential->isEmpty();
+    }
+
+    /**
+     * Whether the source answered every flag and the residential feed - only Insights does. When
+     * this is true and isFlagged() is false, the address was checked and is clean.
+     */
+    public function isComplete(): bool
+    {
+        return $this->isAnonymous !== null
+            && $this->isAnonymousVpn !== null
+            && $this->isHostingProvider !== null
+            && $this->isPublicProxy !== null
+            && $this->isResidentialProxy !== null
+            && $this->isTorExitNode !== null
+            && $this->residential !== null;
     }
 
     /**
      * @param  array<string, mixed>  $row
      */
-    private static function read(array $row, string $confidenceKey, ResidentialAnonymizer $residential): self
+    private static function read(array $row, string $confidenceKey, ?ResidentialAnonymizer $residential): self
     {
         return new self(
             Cast::int($row[$confidenceKey] ?? null),

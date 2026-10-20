@@ -89,7 +89,10 @@ final class DatabaseReaderTest extends TestCase
 
         $this->assertTrue($answer->anonymizer->isAnonymous);
         $this->assertTrue($answer->anonymizer->isAnonymousVpn);
+        $this->assertFalse($answer->anonymizer->isTorExitNode, 'covered and omitted - checked, no');
         $this->assertNull($answer->anonymizer->confidence);
+        $this->assertNull($answer->anonymizer->residential, 'this file does not carry the residential feed');
+        $this->assertFalse($answer->anonymizer->isComplete());
         $this->assertSame('1.2.0.0/16', $answer->network);
     }
 
@@ -110,12 +113,14 @@ final class DatabaseReaderTest extends TestCase
     {
         $answer = Reader::open(self::database('GeoIP-Residential-Proxy'))->anonymizer('1.2.0.4');
 
-        $this->assertFalse($answer->anonymizer->isAnonymous);
+        $this->assertNull($answer->anonymizer->isAnonymous, 'this file cannot say - null, not false');
+        $this->assertNull($answer->anonymizer->isTorExitNode);
         $this->assertNull($answer->anonymizer->confidence);
-        $this->assertSame(82, $answer->anonymizer->residential->confidence);
+        $this->assertSame(82, $answer->anonymizer->residential?->confidence);
         $this->assertSame('quickshift', $answer->anonymizer->residential->providerName);
         $this->assertSame('2026-05-11', $answer->anonymizer->residential->networkLastSeen?->format('Y-m-d'));
         $this->assertTrue($answer->anonymizer->isFlagged());
+        $this->assertFalse($answer->anonymizer->isComplete());
     }
 
     public function testTheSingleFieldDatabases(): void

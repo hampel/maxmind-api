@@ -59,7 +59,8 @@ foreach (['country', 'city', 'insights'] as $service) {
 
             $io->values([
                 '  anonymizer' => $anonymizer->isEmpty() ? 'ABSENT' : json_encode($anonymizer->raw),
-                '  residential' => $anonymizer->residential->isEmpty() ? 'ABSENT' : json_encode($anonymizer->residential->raw),
+                '  residential' => $anonymizer->residential === null || $anonymizer->residential->isEmpty() ? 'ABSENT' : json_encode($anonymizer->residential->raw),
+                '  complete' => $anonymizer->isComplete() ? 'yes - every flag answered' : 'NO - Insights should answer every flag',
                 '  traits keys' => implode(', ', array_keys($answer->traits->raw)),
             ]);
         }

@@ -14,6 +14,8 @@ use Hampel\MaxMind\Api\Record\Anonymizer;
  * chose. What differs is how much is filled: Anonymous IP has the flags only, Anonymous Plus adds
  * confidence, provider and last-seen date, and Residential Proxy fills only
  * `anonymizer->residential`.
+ *
+ * A flag the file does not cover is null, not false - see Record\Anonymizer.
  */
 final class AnonymousIp extends Network
 {

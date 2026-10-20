@@ -8,7 +8,8 @@ First version.
   `AccountKey` credential for every MaxMind service
 - the GeoIP2 Country, City Plus and Insights web services, as `Model\Country`, `Model\City` and
   `Model\Insights`, each extending the last, with the Insights `anonymizer` section and its
-  `residential` feed
+  `residential` feed; an anonymizer flag is `null` where the source cannot say, and `false` where
+  it checked
 - `Database\Reader`, reading GeoIP and GeoLite `.mmdb` files into the same models, and the
   Anonymous IP, Anonymous Plus and Residential Proxy databases into the Insights `Anonymizer`
 - `Downloads`: `lastModified()` by HEAD, `checksum()`, `download()` verified against the published

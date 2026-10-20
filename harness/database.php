@@ -70,10 +70,14 @@ foreach ($addresses as $address) {
                 return sprintf(
                     'flagged %s, vpn %s, confidence %s, provider %s, residential %s',
                     $answer->isFlagged() ? 'yes' : 'no',
-                    $answer->isAnonymousVpn ? 'yes' : 'no',
+                    match ($answer->isAnonymousVpn) {
+                        true => 'yes',
+                        false => 'no',
+                        null => 'not known',
+                    },
                     $answer->confidence ?? '-',
                     $answer->providerName ?? '-',
-                    $answer->residential->providerName ?? '-'
+                    $answer->residential === null ? 'not carried' : ($answer->residential->providerName ?? '-')
                 );
             })(),
             default => json_encode($reader->raw($address)[0]) ?: '?',

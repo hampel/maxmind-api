@@ -103,16 +103,20 @@ this package models it is still readable.
 ```php
 $anonymizer = $insights->anonymizer;
 
-$anonymizer->isAnonymousVpn;
+$anonymizer->isAnonymousVpn;               // true, false, or null - see below
 $anonymizer->isTorExitNode;
 $anonymizer->confidence;                   // 1-99 - compare with a threshold, never test a value
 $anonymizer->providerName;                 // "nordvpn"
-$anonymizer->residential->providerName;    // the residential proxy feed
-$anonymizer->isFlagged();                  // any flag, or the residential feed
+$anonymizer->residential?->providerName;   // the residential proxy feed
+$anonymizer->isFlagged();                  // any flag true, or the residential feed has a record
+$anonymizer->isComplete();                 // every flag and the feed answered - Insights only
 ```
 
-The `residential` record can be filled when no flag is set, which is why `isFlagged()` looks at it
-too. The `is_*` flags under `traits` are deprecated by MaxMind and modelled for completeness; read
+**A flag is `false` when the source checked and `null` when it cannot say.** MaxMind sends a flag
+only when it is true, so from Insights an absent flag is `false`. A database that does not cover a
+flag answers `null` for it, and `residential` is `null` from a source without the residential
+feed — see [Databases](#databases). The `residential` record can be filled when no flag is set,
+which is why `isFlagged()` looks at it too. The `is_*` flags under `traits` are deprecated by MaxMind and modelled for completeness; read
 `anonymizer`.
 
 ## Sandbox
@@ -152,9 +156,14 @@ $reader->country('203.0.113.7')->country->isoCode;  // a City or Enterprise file
 | `isp()`, `connectionType()`, `domain()` | the database of that name | a model of that name |
 
 **`anonymizer()` answers with the same record as Insights**, so a rule written against
-`$anonymizer->isAnonymousVpn` runs unchanged on a file. How much is filled depends on the file:
-Anonymous IP has the flags, Anonymous Plus adds confidence, provider and last-seen date, and
-Residential Proxy fills `residential` only.
+`$anonymizer->isAnonymousVpn` runs unchanged on a file. How much is filled depends on the file,
+and what a file does not cover is `null`, never `false`:
+
+| file | flags | confidence, provider, last seen | `residential` |
+|---|---|---|---|
+| Anonymous IP | `true` or `false` | `null` | `null` |
+| Anonymous Plus | `true` or `false` | filled | `null` |
+| Residential Proxy | `null` | `null` | filled |
 
 The file's own `database_type` decides what it can answer. A lookup it cannot answer raises
 `DatabaseMismatchException` rather than returning an empty model; ask first with

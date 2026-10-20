@@ -41,8 +41,12 @@ the Residential Proxy database is exactly the Insights `anonymizer.residential` 
 **2. Every property is nullable and every section is present.** MaxMind omits empty keys and adds
 fields without a version bump — `anonymizer` arrived on 2025-11-19, `residential` on 2026-07-17.
 Records are built from whatever arrived, `raw` keeps all of it, and an absent section is an empty
-record rather than a null, so `$model->city->name()` never needs a guard. `is_*` flags are false
-when absent, because MaxMind sends them only when true. The deprecated `traits.is_*` flags are
+record rather than a null, so `$model->city->name()` never needs a guard. **The exception is the
+anonymizer, where null means "this source cannot say" and false means "checked, no".** MaxMind
+sends an `is_*` flag only when true, so an absent flag is false from a source that covers it and
+null from one that does not — the Residential Proxy database covers no flags, and only Insights
+and Residential Proxy carry `residential`. Telling the two apart is the first consumer's rule, and
+a plain `bool` would report an unknown as clean. The deprecated `traits.is_*` flags are
 modelled, marked `@deprecated`, and point at `anonymizer`.
 
 **3. An error is classified by status, then refined by code — never generic for a known status.**

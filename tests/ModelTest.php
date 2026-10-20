@@ -69,7 +69,7 @@ final class ModelTest extends TestCase
         $this->assertTrue($anonymizer->isAnonymousVpn);
         $this->assertSame('2025-01-15', $anonymizer->networkLastSeen?->format('Y-m-d'));
         $this->assertSame('nordvpn', $anonymizer->providerName);
-        $this->assertSame(82, $anonymizer->residential->confidence);
+        $this->assertSame(82, $anonymizer->residential?->confidence);
         $this->assertSame('quickshift', $anonymizer->residential->providerName);
     }
 
@@ -115,7 +115,7 @@ final class ModelTest extends TestCase
         $this->assertCount(1, $country->subdivisions);
         $this->assertSame('NSW', $country->subdivisions[0]->isoCode);
         $this->assertNull($country->anonymizer->confidence);
-        $this->assertFalse($country->anonymizer->isAnonymous, 'only true is true');
+        $this->assertFalse($country->anonymizer->isAnonymous, 'only true is true - anything else from Insights is checked, no');
         $this->assertSame('1.2.3.4', $country->traits->ipAddress);
     }
 
@@ -148,6 +148,34 @@ final class ModelTest extends TestCase
         $this->assertTrue($anonymizer->hasResidential());
         $this->assertTrue($anonymizer->isFlagged());
         $this->assertFalse(Anonymizer::fromArray([])->isFlagged());
+    }
+
+    /**
+     * Insights covers every flag and the residential feed, so an address with nothing to report -
+     * the section absent altogether - is checked and clean, not unknown.
+     */
+    public function testAnInsightsAnswerWithNoAnonymizerIsCheckedAndClean(): void
+    {
+        $insights = Insights::fromArray(self::fixture('city'));
+
+        $this->assertFalse($insights->anonymizer->isAnonymousVpn);
+        $this->assertFalse($insights->anonymizer->isTorExitNode);
+        $this->assertNotNull($insights->anonymizer->residential);
+        $this->assertTrue($insights->anonymizer->residential->isEmpty());
+        $this->assertTrue($insights->anonymizer->isComplete());
+        $this->assertFalse($insights->anonymizer->isFlagged());
+    }
+
+    /**
+     * A record nobody filled - the default on a model built by hand - knows nothing.
+     */
+    public function testAnUnbuiltAnonymizerKnowsNothing(): void
+    {
+        $anonymizer = new Anonymizer();
+
+        $this->assertNull($anonymizer->isAnonymous);
+        $this->assertNull($anonymizer->residential);
+        $this->assertFalse($anonymizer->isComplete());
     }
 
     public function testAnUnparseableDateIsNull(): void
